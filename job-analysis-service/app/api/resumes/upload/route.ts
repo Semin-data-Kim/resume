@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
       const pdfParse = await import('pdf-parse');
       const PDFParse = pdfParse.PDFParse;
 
-      const pdfData = await PDFParse(buffer);
+      const parser = new PDFParse();
+      const pdfData = await parser.parse(buffer);
       extractedText = pdfData.text;
 
       if (!extractedText || extractedText.trim().length === 0) {
