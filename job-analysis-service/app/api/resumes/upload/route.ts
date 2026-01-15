@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import pdf from 'pdf-parse';
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,6 +30,8 @@ export async function POST(request: NextRequest) {
     // PDF에서 텍스트 추출
     let extractedText = '';
     try {
+      // Dynamic import for pdf-parse (CommonJS module)
+      const pdf = (await import('pdf-parse')).default;
       const pdfData = await pdf(buffer);
       extractedText = pdfData.text;
 
