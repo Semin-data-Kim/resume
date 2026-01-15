@@ -31,7 +31,8 @@ export async function POST(request: NextRequest) {
     let extractedText = '';
     try {
       // Dynamic import for pdf-parse (CommonJS module)
-      const pdf = (await import('pdf-parse')).default;
+      const pdfParse = await import('pdf-parse');
+      const pdf = pdfParse.default || pdfParse;
       const pdfData = await pdf(buffer);
       extractedText = pdfData.text;
 
