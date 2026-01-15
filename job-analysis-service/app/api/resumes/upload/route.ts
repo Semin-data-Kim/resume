@@ -30,17 +30,11 @@ export async function POST(request: NextRequest) {
     // PDF에서 텍스트 추출
     let extractedText = '';
     try {
-      // Dynamic import for pdf-parse (CommonJS module)
+      // Dynamic import for pdf-parse
       const pdfParse = await import('pdf-parse');
-      console.log('pdfParse:', pdfParse);
-      console.log('pdfParse.default:', pdfParse.default);
-      console.log('pdfParse keys:', Object.keys(pdfParse));
+      const PDFParse = pdfParse.PDFParse;
 
-      // Try different import patterns
-      const pdf = pdfParse.default || pdfParse || (pdfParse as any).default;
-      console.log('pdf:', typeof pdf);
-
-      const pdfData = await pdf(buffer);
+      const pdfData = await PDFParse(buffer);
       extractedText = pdfData.text;
 
       if (!extractedText || extractedText.trim().length === 0) {
