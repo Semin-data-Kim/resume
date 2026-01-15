@@ -32,7 +32,14 @@ export async function POST(request: NextRequest) {
     try {
       // Dynamic import for pdf-parse (CommonJS module)
       const pdfParse = await import('pdf-parse');
-      const pdf = pdfParse.default || pdfParse;
+      console.log('pdfParse:', pdfParse);
+      console.log('pdfParse.default:', pdfParse.default);
+      console.log('pdfParse keys:', Object.keys(pdfParse));
+
+      // Try different import patterns
+      const pdf = pdfParse.default || pdfParse || (pdfParse as any).default;
+      console.log('pdf:', typeof pdf);
+
       const pdfData = await pdf(buffer);
       extractedText = pdfData.text;
 
