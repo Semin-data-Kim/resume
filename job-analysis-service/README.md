@@ -144,13 +144,73 @@ npm run dev
 - [ ] 대시보드 UI
 - [ ] Vercel 배포
 
+## ⚠️ 다음 단계: Supabase 설정 필수!
+
+현재 PDF 업로드 기능이 코드상으로는 완성되었지만, **실제로 작동하려면 Supabase 설정이 필요**합니다.
+
+### 🔴 필수 작업 (반드시 완료하세요!)
+
+#### 1단계: Supabase 프로젝트 생성
+
+1. [Supabase](https://supabase.com)에 접속하여 로그인
+2. "New Project" 버튼 클릭
+3. 프로젝트 이름 입력 (예: job-analysis-service)
+4. 데이터베이스 비밀번호 설정 (잊지 마세요!)
+5. 리전 선택 (Northeast Asia - Seoul 권장)
+6. 프로젝트 생성 완료 대기 (약 2분)
+
+#### 2단계: API 키 복사 및 환경변수 설정
+
+1. Supabase 대시보드에서 프로젝트 선택
+2. 왼쪽 메뉴에서 ⚙️ **Settings** → **API** 클릭
+3. 다음 정보를 복사:
+   - **Project URL** (예: `https://xxxxx.supabase.co`)
+   - **anon/public key** (긴 JWT 토큰 문자열)
+
+4. `.env.local` 파일을 열고 다음과 같이 수정:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+⚠️ **중요**: `your_supabase_project_url`과 `your_supabase_anon_key`를 실제 값으로 교체하세요!
+
+#### 3단계: 데이터베이스 테이블 생성
+
+1. Supabase 대시보드에서 🔧 **SQL Editor** 클릭
+2. "New query" 버튼 클릭
+3. `supabase/schema.sql` 파일의 **전체 내용**을 복사하여 붙여넣기
+4. **"Run"** 버튼 클릭하여 실행
+5. "Success. No rows returned" 메시지 확인
+
+#### 4단계: 개발 서버 재시작
+
+```bash
+# 현재 실행 중인 서버 종료 (Ctrl+C)
+# 그 다음 다시 시작
+npm run dev
+```
+
+#### 5단계: 테스트!
+
+1. 브라우저에서 [http://localhost:3000](http://localhost:3000) 접속
+2. "이력서 관리" 카드 클릭
+3. 이력서 제목 입력 (예: "2024년 개발자 이력서")
+4. PDF 파일 선택 (텍스트가 있는 PDF만 가능, 스캔본 불가)
+5. "업로드" 버튼 클릭
+6. ✅ "이력서가 성공적으로 업로드되었습니다!" 메시지 확인
+
+---
+
 ## 🐛 문제 해결
 
 ### PDF 업로드가 안 돼요!
 
-- Supabase 환경 변수가 올바르게 설정되었는지 확인
+- **Supabase 환경 변수가 올바르게 설정되었는지 확인** (위 2단계 참고)
 - `.env.local` 파일이 프로젝트 루트에 있는지 확인
 - 개발 서버를 재시작해보세요: `Ctrl+C` 후 `npm run dev`
+- 브라우저 개발자 도구(F12)에서 Console 탭을 확인하여 오류 메시지 확인
 
 ### 데이터베이스 오류가 발생해요!
 
