@@ -33,24 +33,43 @@ export async function POST(request: NextRequest) {
     // PDF에서 텍스트 추출
     let extractedText = '';
     try {
-      // Use pdfreader for Node.js environment (pure JS, no native dependencies)
-      const { PdfReader } = require('pdfreader');
+      // Use pdf2json for Node.js environment (100% pure JavaScript)
+      const PDFParser = require('pdf2json');
 
       // Parse PDF and extract text
       extractedText = await new Promise<string>((resolve, reject) => {
-        const textParts: string[] = [];
+        const pdfParser = new PDFParser();
 
-        new PdfReader({}).parseBuffer(buffer, (err: any, item: any) => {
-          if (err) {
-            reject(err);
-          } else if (!item) {
-            // End of file
-            resolve(textParts.join(' '));
-          } else if (item.text) {
-            // Text item found
-            textParts.push(item.text);
-          }
+        pdfParser.on('pdfParser_dataError', (errData: any) => {
+          reject(new Error(errData.parserError));
         });
+
+        pdfParser.on('pdfParser_dataReady', (pdfData: any) => {
+          // Extract text from all pages
+          const textParts: string[] = [];
+
+          if (pdfData.Pages) {
+            pdfData.Pages.forEach((page: any) => {
+              if (page.Texts) {
+                page.Texts.forEach((text: any) => {
+                  if (text.R) {
+                    text.R.forEach((r: any) => {
+                      if (r.T) {
+                        // Decode URI-encoded text
+                        textParts.push(decodeURIComponent(r.T));
+                      }
+                    });
+                  }
+                });
+              }
+            });
+          }
+
+          resolve(textParts.join(' '));
+        });
+
+        // Parse the buffer
+        pdfParser.parseBuffer(buffer);
       });
 
       if (!extractedText || extractedText.trim().length === 0) {
