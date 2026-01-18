@@ -31,11 +31,11 @@ export async function POST(request: NextRequest) {
     let extractedText = '';
     try {
       // Dynamic import for pdf-parse
-      const pdfParse = await import('pdf-parse');
-      const PDFParse = pdfParse.PDFParse;
+      const pdfParseModule = await import('pdf-parse');
+      // pdf-parse is a CommonJS module, access the actual function
+      const pdfParse = (pdfParseModule as any).default || pdfParseModule;
 
-      const parser = new PDFParse();
-      const pdfData = await parser.parse(buffer);
+      const pdfData = await pdfParse(buffer);
       extractedText = pdfData.text;
 
       if (!extractedText || extractedText.trim().length === 0) {
