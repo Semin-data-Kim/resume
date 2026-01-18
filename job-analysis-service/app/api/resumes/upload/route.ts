@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
+// Force Node.js runtime for pdf-parse compatibility
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
