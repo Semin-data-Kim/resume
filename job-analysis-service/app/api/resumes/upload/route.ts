@@ -30,11 +30,8 @@ export async function POST(request: NextRequest) {
     // PDF에서 텍스트 추출
     let extractedText = '';
     try {
-      // Dynamic import for pdf-parse
-      const pdfParseModule = await import('pdf-parse');
-      // pdf-parse is a CommonJS module, access the actual function
-      const pdfParse = (pdfParseModule as any).default || pdfParseModule;
-
+      // Try to use pdf-parse as a regular function call
+      const pdfParse = require('pdf-parse');
       const pdfData = await pdfParse(buffer);
       extractedText = pdfData.text;
 
