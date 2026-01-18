@@ -33,12 +33,25 @@ export async function POST(request: NextRequest) {
     // PDF에서 텍스트 추출
     let extractedText = '';
     try {
-      // Use pdf-parse for Node.js environment
-      const pdfParse = require('pdf-parse');
+      // Use pdfreader for Node.js environment (pure JS, no native dependencies)
+      const { PdfReader } = require('pdfreader');
 
       // Parse PDF and extract text
-      const pdfData = await pdfParse(buffer);
-      extractedText = pdfData.text;
+      extractedText = await new Promise<string>((resolve, reject) => {
+        const textParts: string[] = [];
+
+        new PdfReader({}).parseBuffer(buffer, (err: any, item: any) => {
+          if (err) {
+            reject(err);
+          } else if (!item) {
+            // End of file
+            resolve(textParts.join(' '));
+          } else if (item.text) {
+            // Text item found
+            textParts.push(item.text);
+          }
+        });
+      });
 
       if (!extractedText || extractedText.trim().length === 0) {
         return NextResponse.json(
