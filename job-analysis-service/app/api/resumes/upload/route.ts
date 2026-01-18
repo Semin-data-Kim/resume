@@ -33,11 +33,11 @@ export async function POST(request: NextRequest) {
     // PDF에서 텍스트 추출
     let extractedText = '';
     try {
-      // Use pdfjs-dist (more reliable with Next.js)
-      const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
+      // Use pdfjs-dist
+      const pdfjsLib = require('pdfjs-dist');
 
       // Load PDF document
-      const loadingTask = pdfjsLib.getDocument({ data: buffer });
+      const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buffer) });
       const pdfDocument = await loadingTask.promise;
 
       // Extract text from all pages
