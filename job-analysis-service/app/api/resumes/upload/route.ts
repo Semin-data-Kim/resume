@@ -33,10 +33,29 @@ export async function POST(request: NextRequest) {
     // PDF에서 텍스트 추출
     let extractedText = '';
     try {
-      // Try to use pdf-parse as a regular function call
-      const pdfParse = require('pdf-parse');
-      const pdfData = await pdfParse(buffer);
-      extractedText = pdfData.text;
+      // Use pdfjs-dist (more reliable with Next.js)
+      const pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
+
+      // Load PDF document
+      const loadingTask = pdfjsLib.getDocument({ data: buffer });
+      const pdfDocument = await loadingTask.promise;
+
+      // Extract text from all pages
+      const numPages = pdfDocument.numPages;
+      const textPromises = [];
+
+      for (let i = 1; i <= numPages; i++) {
+        textPromises.push(
+          pdfDocument.getPage(i).then((page: any) =>
+            page.getTextContent().then((textContent: any) =>
+              textContent.items.map((item: any) => item.str).join(' ')
+            )
+          )
+        );
+      }
+
+      const pageTexts = await Promise.all(textPromises);
+      extractedText = pageTexts.join('\n');
 
       if (!extractedText || extractedText.trim().length === 0) {
         return NextResponse.json(
