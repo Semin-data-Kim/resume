@@ -33,8 +33,8 @@ export async function POST(request: NextRequest) {
     // PDF에서 텍스트 추출
     let extractedText = '';
     try {
-      // Use pdfjs-dist
-      const pdfjsLib = require('pdfjs-dist');
+      // Use pdfjs-dist legacy build with dynamic import (ESM)
+      const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
 
       // Load PDF document
       const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buffer) });
