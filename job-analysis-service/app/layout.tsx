@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import MainHeader from "@/components/MainHeader";
 
 export const metadata: Metadata = {
   title: "AI 채용 공고 분석 서비스",
@@ -14,6 +15,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className="antialiased">
+        <MainHeader />
         {children}
       </body>
     </html>

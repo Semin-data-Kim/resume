@@ -2,17 +2,25 @@
 
 import { useState } from 'react';
 
-export default function ResumeUpload() {
-  const [title, setTitle] = useState('');
+type UploadType = 'resume' | 'portfolio';
+
+type ResumeUploadProps = {
+  type: UploadType;
+  latestTitle?: string | null;
+};
+
+export default function ResumeUpload({ type, latestTitle }: ResumeUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
+  const labelText = type === 'portfolio' ? '포트폴리오' : '이력서';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title || !file) {
-      setMessage('제목과 파일을 모두 입력해주세요.');
+    if (!file) {
+      setMessage('파일을 선택해주세요.');
       return;
     }
 
@@ -21,8 +29,8 @@ export default function ResumeUpload() {
 
     try {
       const formData = new FormData();
-      formData.append('title', title);
       formData.append('file', file);
+      formData.append('type', type);
 
       const response = await fetch('/api/resumes/upload', {
         method: 'POST',
@@ -32,11 +40,10 @@ export default function ResumeUpload() {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage('이력서가 성공적으로 업로드되었습니다!');
-        setTitle('');
+        setMessage(type === 'portfolio' ? '포트폴리오가 성공적으로 업로드되었습니다!' : '이력서가 성공적으로 업로드되었습니다!');
         setFile(null);
         // 파일 입력 초기화
-        const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+        const fileInput = document.getElementById(`${type}-file-upload`) as HTMLInputElement;
         if (fileInput) fileInput.value = '';
       } else {
         setMessage(data.error || '업로드에 실패했습니다.');
@@ -50,31 +57,23 @@ export default function ResumeUpload() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <h2 className="text-2xl font-bold mb-6">이력서 업로드</h2>
+    <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+      <div className="flex items-baseline justify-between mb-4">
+        <div>
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{labelText}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {latestTitle ? `최신 파일: ${latestTitle}` : '업로드된 파일 없음'}
+          </p>
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label htmlFor="title" className="block text-sm font-medium mb-2">
-            이력서 제목
-          </label>
-          <input
-            id="title"
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="예: 2024년 개발자 이력서"
-            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            disabled={loading}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="file-upload" className="block text-sm font-medium mb-2">
+          <label htmlFor={`${type}-file-upload`} className="block text-sm font-medium mb-2">
             PDF 파일
           </label>
           <input
-            id="file-upload"
+            id={`${type}-file-upload`}
             type="file"
             accept=".pdf"
             onChange={(e) => setFile(e.target.files?.[0] || null)}

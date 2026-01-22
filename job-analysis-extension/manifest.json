@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "채용 공고 분석기",
+  "version": "1.0",
+  "description": "공고 페이지에서 데이터를 읽어 분석 서비스로 전달합니다.",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": [
+    "http://localhost:3000/*",
+    "https://*.wanted.co.kr/*",
+    "https://*.rememberapp.co.kr/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  }
+}

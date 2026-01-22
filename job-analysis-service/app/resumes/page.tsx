@@ -1,6 +1,22 @@
 import ResumeUpload from '@/components/ResumeUpload';
+import { createClient } from '@/lib/supabase-server';
+import { redirect } from 'next/navigation';
 
-export default function ResumesPage() {
+export default async function ResumesPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect('/login');
+
+  const { data: resumes } = await supabase
+    .from('resumes')
+    .select('id, title, type, created_at')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+
+  const latestResume = (resumes || []).find((item) => item.type !== 'portfolio');
+  const latestPortfolio = (resumes || []).find((item) => item.type === 'portfolio');
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
       <div className="max-w-4xl mx-auto">
@@ -11,8 +27,15 @@ export default function ResumesPage() {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-          <ResumeUpload />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <ResumeUpload
+            type="resume"
+            latestTitle={latestResume?.title}
+          />
+          <ResumeUpload
+            type="portfolio"
+            latestTitle={latestPortfolio?.title}
+          />
         </div>
 
         <div className="mt-8 p-6 bg-blue-50 dark:bg-blue-900/20 rounded-lg">

@@ -18,11 +18,20 @@ function cleanJsonResponse(text: string): string {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { resumeText, jobPostingText, jobTitle, companyName } = body;
+    const {
+      resumeText: requestResumeText,
+      jobPostingText: requestJobPostingText,
+      jobPosting,
+      jobTitle,
+      companyName,
+      jobPostingUrl,
+    } = body;
 
-    if (!resumeText || !jobPostingText) {
+    const jobPostingText = requestJobPostingText || jobPosting;
+
+    if (!jobPostingText) {
       return NextResponse.json(
-        { error: 'resumeText와 jobPostingText는 필수입니다.' },
+        { error: 'jobPostingText는 필수입니다.' },
         { status: 400 }
       );
     }
@@ -34,6 +43,70 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const supabase = await createClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: '로그인이 필요합니다.' },
+        { status: 401 }
+      );
+    }
+
+    let resumeText = requestResumeText;
+    let resumeId: string | null = null;
+    let portfolioText = '';
+
+    if (!resumeText) {
+      const { data: resumeRows, error: resumeError } = await supabase
+        .from('resumes')
+        .select('id, content')
+        .eq('user_id', user.id)
+        .eq('type', 'resume')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (resumeError) {
+        console.error('이력서 조회 실패:', resumeError);
+        return NextResponse.json(
+          { error: '이력서를 불러오는데 실패했습니다.' },
+          { status: 500 }
+        );
+      }
+
+      resumeText = resumeRows?.[0]?.content;
+      resumeId = resumeRows?.[0]?.id ?? null;
+    }
+
+    if (!resumeText) {
+      return NextResponse.json(
+        { error: '최신 이력서를 찾을 수 없습니다.' },
+        { status: 400 }
+      );
+    }
+
+    if (!resumeId) {
+      const { data: resumeRows } = await supabase
+        .from('resumes')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('type', 'resume')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      resumeId = resumeRows?.[0]?.id ?? null;
+    }
+
+    const { data: portfolioRows } = await supabase
+      .from('resumes')
+      .select('content')
+      .eq('user_id', user.id)
+      .eq('type', 'portfolio')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    portfolioText = portfolioRows?.[0]?.content || '';
+
     // Claude API 호출 (모델명 고정: claude-sonnet-4-20250514)
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
@@ -41,10 +114,12 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: 'user',
-          content: `당신은 채용 전문 컨설턴트입니다. 아래 이력서와 채용 공고를 비교 분석하여 JSON 형식으로 결과를 제공하세요.
+          content: `당신은 채용 전문 컨설턴트입니다. 아래 이력서와 채용 공고를 **엄격하게** 비교 분석하여 JSON 형식으로 결과를 제공하세요.
 
 **이력서:**
 ${resumeText}
+
+${portfolioText ? `**포트폴리오:**\n${portfolioText}\n` : ''}
 
 **채용 공고:**
 제목: ${jobTitle || '제목 없음'}
@@ -78,12 +153,19 @@ ${jobPostingText}
 }
 
 **분석 가이드:**
-- matching_score: 0-100 사이의 점수 (이력서와 공고의 적합도)
-- match_reason: 매칭 점수에 대한 간단한 이유 (한 문장)
-- required_experience: 공고에서 요구하는 경력 추출
-- winning_points: 이력서의 강점 3-5개 (공고 요구사항과 매칭되는 부분)
+- matching_score: 0-100 사이의 점수 (이력서와 공고의 적합도). **후하게 주지 말 것.**
+- match_reason: 매칭 점수에 대한 간단한 이유 (한 문장). **과장 금지, 근거를 포함.**
+- required_experience: 공고에서 요구하는 경력 그대로 추출
+- winning_points: 이력서의 강점 3-5개 (공고 요구사항과 **직접 매칭되는** 부분만)
 - strategic_advices: 보완이 필요한 부분과 전략 3-5개
 - interview_questions: 예상 면접 질문 5-7개 (각 질문에 tip 포함)
+
+**엄격 평가 규칙:**
+1) 경력 요구사항이 미달이면 matching_score는 70점을 넘지 말 것.
+2) 업종/도메인 경험이 미달이면 10~25점 감점할 것.
+3) 자격요건의 핵심 키워드(예: "간편결제", "커머스", "IT")가 이력서에 **직접적으로** 없으면 감점할 것.
+4) 숫자/기간은 **추정하지 말고** 이력서에 있는 내용만 근거로 판단할 것.
+5) 근거가 불충분하면 match_reason에 "정보 부족" 또는 "직접 근거 없음"을 명시할 것.
 
 응답은 반드시 순수한 JSON 형식만 출력하세요. 마크다운이나 다른 텍스트는 포함하지 마세요.`,
         },
@@ -109,20 +191,41 @@ ${jobPostingText}
       );
     }
 
-    // Supabase에 저장
-    const supabase = await createClient();
+    const requiredExperienceFromPosting = (() => {
+      if (!jobPostingText) return '';
+      const match = jobPostingText.match(/경력\s*([0-9]+)\s*년/);
+      if (match?.[1]) {
+        return `${match[1]}년`;
+      }
+      return '';
+    })();
+
+    const requiredExperience =
+      analysisData.required_experience ||
+      requiredExperienceFromPosting ||
+      '정보 없음';
+
+    const interviewQuestions =
+      analysisData.interview_questions ||
+      analysisData.interview_strategy ||
+      [];
 
     const { data, error } = await supabase
       .from('analysis_reports')
       .insert({
+        user_id: user.id,
+        resume_id: resumeId,
         job_posting_title: jobTitle || '제목 없음',
         job_posting_company: companyName || '회사명 없음',
         job_posting_content: jobPostingText,
+        job_posting_url: jobPostingUrl || null,
         resume_content: resumeText,
         matching_score: analysisData.matching_score || 0,
+        match_reason: analysisData.match_reason || null,
+        required_experience: requiredExperience,
         winning_points: analysisData.winning_points || [],
         strategic_advices: analysisData.strategic_advices || [],
-        interview_questions: analysisData.interview_questions || [],
+        interview_questions: interviewQuestions,
       })
       .select()
       .single();
@@ -142,13 +245,13 @@ ${jobPostingText}
         job_title: jobTitle || '제목 없음',
         match_score: analysisData.matching_score || 0,
         match_reason: analysisData.match_reason || '분석 완료되었습니다.',
-        required_experience: analysisData.required_experience || '정보 없음',
+        required_experience: requiredExperience,
       },
       career_assessment: {
         winning_points: analysisData.winning_points || [],
         strategic_advices: analysisData.strategic_advices || [],
       },
-      interview_strategy: analysisData.interview_questions || [],
+      interview_strategy: interviewQuestions,
     };
 
     // DB ID와 전체 데이터 반환

@@ -1,19 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase-server';
+import pdf from 'pdf-parse';
 
 // Force Node.js runtime for pdf-parse compatibility
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: '로그인이 필요합니다.' },
+        { status: 401 }
+      );
+    }
+
     const formData = await request.formData();
-    const title = formData.get('title') as string;
+    const title = (formData.get('title') as string) || '';
     const file = formData.get('file') as File;
+    const type = (formData.get('type') as string) || 'resume';
 
     // 입력 검증
-    if (!title || !file) {
+    if (!file) {
       return NextResponse.json(
-        { error: '제목과 파일을 모두 제공해야 합니다.' },
+        { error: '파일을 선택해야 합니다.' },
+        { status: 400 }
+      );
+    }
+
+    // 타입 검증
+    if (!['resume', 'portfolio'].includes(type)) {
+      return NextResponse.json(
+        { error: 'type은 resume 또는 portfolio여야 합니다.' },
         { status: 400 }
       );
     }
@@ -33,44 +53,8 @@ export async function POST(request: NextRequest) {
     // PDF에서 텍스트 추출
     let extractedText = '';
     try {
-      // Use pdf2json for Node.js environment (100% pure JavaScript)
-      const PDFParser = require('pdf2json');
-
-      // Parse PDF and extract text
-      extractedText = await new Promise<string>((resolve, reject) => {
-        const pdfParser = new PDFParser();
-
-        pdfParser.on('pdfParser_dataError', (errData: any) => {
-          reject(new Error(errData.parserError));
-        });
-
-        pdfParser.on('pdfParser_dataReady', (pdfData: any) => {
-          // Extract text from all pages
-          const textParts: string[] = [];
-
-          if (pdfData.Pages) {
-            pdfData.Pages.forEach((page: any) => {
-              if (page.Texts) {
-                page.Texts.forEach((text: any) => {
-                  if (text.R) {
-                    text.R.forEach((r: any) => {
-                      if (r.T) {
-                        // Decode URI-encoded text
-                        textParts.push(decodeURIComponent(r.T));
-                      }
-                    });
-                  }
-                });
-              }
-            });
-          }
-
-          resolve(textParts.join(' '));
-        });
-
-        // Parse the buffer
-        pdfParser.parseBuffer(buffer);
-      });
+      const pdfData = await pdf(buffer);
+      extractedText = pdfData.text;
 
       if (!extractedText || extractedText.trim().length === 0) {
         return NextResponse.json(
@@ -86,18 +70,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 임시 사용자 ID (나중에 Supabase Auth로 교체)
-    // 지금은 데모를 위해 고정된 UUID를 사용합니다
-    const tempUserId = '00000000-0000-0000-0000-000000000000';
-
     // Supabase에 이력서 저장
+    const storedTitle = title || file.name;
     const { data, error } = await supabase
       .from('resumes')
       .insert({
-        user_id: tempUserId,
-        title: title,
+        user_id: user.id,
+        title: storedTitle,
         content: extractedText,
         file_url: null, // 나중에 Storage 연동 시 업데이트
+        type: type,
       })
       .select()
       .single();
@@ -111,7 +93,9 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      message: '이력서가 성공적으로 업로드되었습니다.',
+      message: type === 'portfolio'
+        ? '포트폴리오가 성공적으로 업로드되었습니다.'
+        : '이력서가 성공적으로 업로드되었습니다.',
       resume: {
         id: data.id,
         title: data.title,
@@ -131,13 +115,20 @@ export async function POST(request: NextRequest) {
 // GET: 이력서 목록 조회 (추가 기능)
 export async function GET() {
   try {
-    // 임시 사용자 ID
-    const tempUserId = '00000000-0000-0000-0000-000000000000';
+    const supabase = await createClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: '로그인이 필요합니다.' },
+        { status: 401 }
+      );
+    }
 
     const { data, error } = await supabase
       .from('resumes')
       .select('id, title, created_at, updated_at')
-      .eq('user_id', tempUserId)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
