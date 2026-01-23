@@ -143,7 +143,7 @@ function ReportContent() {
               <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest">강점 요약</p>
               <div className="text-sm font-bold text-slate-700 leading-relaxed">
                 {topStrengths.length > 0 ? (
-                  topStrengths.map((item, i) => (
+                  topStrengths.map((item: string, i: number) => (
                     <div key={`strength-${i}`}># {item}</div>
                   ))
                 ) : (
@@ -155,7 +155,7 @@ function ReportContent() {
               <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest">약점 요약</p>
               <div className="text-sm font-bold text-slate-700 leading-relaxed">
                 {topWeaknesses.length > 0 ? (
-                  topWeaknesses.map((item, i) => (
+                  topWeaknesses.map((item: string, i: number) => (
                     <div key={`weakness-${i}`}># {item}</div>
                   ))
                 ) : (
