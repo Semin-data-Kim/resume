@@ -1,6 +1,18 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
 
+type ReportRow = {
+  job_posting_company?: string | null;
+  job_posting_title?: string | null;
+  job_posting_url?: string | null;
+  matching_score?: number | null;
+  match_reason?: string | null;
+  required_experience?: string | null;
+  winning_points?: string[] | null;
+  strategic_advices?: Array<{ title: string; description: string }> | null;
+  interview_questions?: Array<{ question: string; tip: string }> | null;
+};
+
 export async function GET(
   _request: Request,
   context: { params: Promise<{ id: string }> }
@@ -50,20 +62,21 @@ export async function GET(
       );
     }
 
+    const report = data as unknown as ReportRow;
     const reportData = {
       header: {
-        company_name: data.job_posting_company || '회사명 없음',
-        job_title: data.job_posting_title || '제목 없음',
-        job_url: data.job_posting_url || '',
-        match_score: data.matching_score || 0,
-        match_reason: data.match_reason || '분석 완료되었습니다.',
-        required_experience: data.required_experience || '정보 없음',
+        company_name: report.job_posting_company || '회사명 없음',
+        job_title: report.job_posting_title || '제목 없음',
+        job_url: report.job_posting_url || '',
+        match_score: report.matching_score || 0,
+        match_reason: report.match_reason || '분석 완료되었습니다.',
+        required_experience: report.required_experience || '정보 없음',
       },
       career_assessment: {
-        winning_points: data.winning_points || [],
-        strategic_advices: data.strategic_advices || [],
+        winning_points: report.winning_points || [],
+        strategic_advices: report.strategic_advices || [],
       },
-      interview_strategy: data.interview_questions || [],
+      interview_strategy: report.interview_questions || [],
     };
 
     return NextResponse.json({ data: reportData });
