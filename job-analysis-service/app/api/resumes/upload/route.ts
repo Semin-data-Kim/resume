@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
-import pdf from 'pdf-parse';
 
 // Force Node.js runtime for pdf-parse compatibility
 export const runtime = 'nodejs';
@@ -53,7 +52,11 @@ export async function POST(request: NextRequest) {
     // PDF에서 텍스트 추출
     let extractedText = '';
     try {
-      const pdfData = await pdf(buffer);
+      const pdfParseModule = await import('pdf-parse');
+      const pdfParse =
+        (pdfParseModule as { default?: (data: Buffer) => Promise<{ text: string }> }).default ??
+        (pdfParseModule as unknown as (data: Buffer) => Promise<{ text: string }>);
+      const pdfData = await pdfParse(buffer);
       extractedText = pdfData.text;
 
       if (!extractedText || extractedText.trim().length === 0) {
