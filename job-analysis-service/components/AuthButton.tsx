@@ -32,7 +32,7 @@ export default function AuthButton() {
     await supabase.auth.signOut();
     setUser(null);
     router.refresh();
-    router.push('/login');
+    router.push('/');
   };
 
   if (!user) {

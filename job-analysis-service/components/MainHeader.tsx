@@ -9,7 +9,7 @@ export default function MainHeader() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
-  if (pathname === '/login') {
+  if (pathname === '/' || pathname === '/login') {
     return null;
   }
 
@@ -67,7 +67,7 @@ export default function MainHeader() {
           </div>
           <nav className="space-y-4">
             <Link
-              href="/resumes"
+              href="/resume"
               className="block px-4 py-3 rounded-xl border border-slate-200 font-black italic uppercase tracking-widest text-xs hover:border-slate-900 transition-all"
             >
               서류 관리
