@@ -19,11 +19,11 @@ export default function OnboardingOverlay({ isLoggedIn }: OnboardingOverlayProps
   const [resumeLoading, setResumeLoading] = useState(false);
   const [portfolioLoading, setPortfolioLoading] = useState(false);
   const [extensionConfirmed, setExtensionConfirmed] = useState(false);
-  const hasExtensionUrl = Boolean(extensionUrl);
   const extensionUrl = useMemo(
     () => process.env.NEXT_PUBLIC_EXTENSION_URL || '',
     []
   );
+  const hasExtensionUrl = Boolean(extensionUrl);
 
   useEffect(() => {
     if (!isLoggedIn) return;
