@@ -31,9 +31,14 @@ export default function LoginPage() {
         >
           Google로 로그인
         </button>
-        <Link href="/" className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-slate-900">
-          랜딩으로 돌아가기
-        </Link>
+        <div className="space-y-2">
+          <Link href="/" className="block text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-slate-900">
+            랜딩으로 돌아가기
+          </Link>
+          <Link href="/privacy" className="block text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-slate-900">
+            개인정보처리방침
+          </Link>
+        </div>
       </div>
     </div>
   );

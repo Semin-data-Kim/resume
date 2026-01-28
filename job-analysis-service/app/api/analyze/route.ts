@@ -43,13 +43,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const supabase = await createClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    if (userError || !user) {
+  if (userError || !user) {
       return NextResponse.json(
         { error: '로그인이 필요합니다.' },
         { status: 401 }
+      );
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: usageRow, error: usageError } = await supabase
+      .from('analysis_usage')
+      .select('count')
+      .eq('user_id', user.id)
+      .eq('used_on', today)
+      .maybeSingle();
+
+    if (usageError) {
+      console.error('분석 사용량 조회 실패:', usageError);
+      return NextResponse.json(
+        { error: '분석 사용량을 확인할 수 없습니다.' },
+        { status: 500 }
+      );
+    }
+
+    if ((usageRow?.count ?? 0) >= 3) {
+      return NextResponse.json(
+        { error: '오늘의 무료 분석 횟수를 모두 사용했습니다.' },
+        { status: 429 }
       );
     }
 
@@ -238,6 +261,22 @@ ${jobPostingText}
       );
     }
 
+    const nextCount = (usageRow?.count ?? 0) + 1;
+    const { error: usageUpdateError } = await supabase
+      .from('analysis_usage')
+      .upsert(
+        {
+          user_id: user.id,
+          used_on: today,
+          count: nextCount,
+        },
+        { onConflict: 'user_id,used_on' }
+      );
+
+    if (usageUpdateError) {
+      console.error('분석 사용량 업데이트 실패:', usageUpdateError);
+    }
+
     // 클라이언트가 기대하는 형식으로 데이터 구성
     const reportData = {
       header: {
@@ -258,6 +297,7 @@ ${jobPostingText}
     return NextResponse.json({
       success: true,
       reportId: data.id,
+      remaining: Math.max(0, 3 - nextCount),
       data: reportData,
     });
   } catch (error: any) {

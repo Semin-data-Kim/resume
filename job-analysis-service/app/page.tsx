@@ -130,7 +130,7 @@ export default function LandingPage() {
               <ul className="space-y-4 mb-10 text-slate-600 font-medium text-sm">
                 <li className="flex items-center gap-2">✓ 공고 대비 서류 매칭 분석</li>
                 <li className="flex items-center gap-2">✓ 강점/약점 요약 리포트</li>
-                <li className="flex items-center gap-2">✓ 최근 분석 이력 대시보드</li>
+                <li className="flex items-center gap-2">✓ 일일 3회 분석 제공</li>
               </ul>
             </div>
             <button
@@ -153,9 +153,9 @@ export default function LandingPage() {
                 <span className="text-blue-600 font-bold underline decoration-blue-200">심화 AI 피드백</span>
               </p>
               <ul className="space-y-4 mb-10 text-slate-600 font-bold text-sm">
+                <li className="flex items-center gap-2 text-blue-700">✓ 분석 횟수 무제한</li>
                 <li className="flex items-center gap-2 text-blue-700">✓ AI 예상 면접 질문 &amp; 답변</li>
                 <li className="flex items-center gap-2 text-blue-700">✓ 자소서 항목별 커스터마이징</li>
-                <li className="flex items-center gap-2 text-blue-700">✓ 실시간 합격 확률 시뮬레이터</li>
               </ul>
             </div>
             <button
@@ -222,8 +222,13 @@ export default function LandingPage() {
         </div>
       )}
 
-      <footer className="py-12 text-center text-slate-400 text-xs border-t border-slate-100 bg-white">
-        © 2026 Job Analysis AI. All rights reserved.
+      <footer className="py-12 text-center text-slate-400 text-xs border-t border-slate-100 bg-white space-y-3">
+        <div>
+          <Link href="/privacy" className="font-bold uppercase tracking-widest text-slate-500 hover:text-slate-900">
+            개인정보처리방침
+          </Link>
+        </div>
+        <div>© 2026 Job Analysis AI. All rights reserved.</div>
       </footer>
     </div>
   );
