@@ -19,6 +19,7 @@ export default function OnboardingOverlay({ isLoggedIn }: OnboardingOverlayProps
   const [resumeLoading, setResumeLoading] = useState(false);
   const [portfolioLoading, setPortfolioLoading] = useState(false);
   const [extensionConfirmed, setExtensionConfirmed] = useState(false);
+  const hasExtensionUrl = Boolean(extensionUrl);
   const extensionUrl = useMemo(
     () => process.env.NEXT_PUBLIC_EXTENSION_URL || '',
     []
@@ -208,7 +209,7 @@ export default function OnboardingOverlay({ isLoggedIn }: OnboardingOverlayProps
                 >
                   크롬 확장프로그램 설치
                 </a>
-                {extensionUrl ? (
+                {hasExtensionUrl ? (
                   <label className="flex items-center gap-2 text-sm text-slate-600">
                     <input
                       type="checkbox"
@@ -266,7 +267,7 @@ export default function OnboardingOverlay({ isLoggedIn }: OnboardingOverlayProps
                   ? 'text-slate-300 cursor-not-allowed'
                   : 'text-slate-900'
               }`}
-              disabled={step === 2 && extensionUrl && !extensionConfirmed}
+              disabled={step === 2 && hasExtensionUrl && !extensionConfirmed}
             >
               다음
             </button>
